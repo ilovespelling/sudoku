@@ -7,6 +7,8 @@
   :root {
     --cell: 52px;
     --user: #ff5da2;
+    --neutral: #4b4a78;
+    --correct: #2ec27e;
     --given-text: #7a4a12;
     --error: #ff4b6e;
     --selected: #ffe066;
@@ -108,10 +110,12 @@
     font-weight: 700;
     cursor: default;
     box-shadow:
-      inset 0 2px 4px rgba(150,100,20,0.25),
-      inset 0 -1px 0 rgba(255,255,255,0.7);
+      inset 0 2px 3px rgba(255,255,255,0.85),
+      inset 0 -2px 3px rgba(0,0,0,0.08);
   }
   #board td.error { color: var(--error); }
+  #board td.correct { color: var(--correct); }
+  #board td.neutral { color: var(--neutral); }
   #board td.selected {
     background: linear-gradient(160deg, #fff3b0, var(--selected));
     box-shadow: inset 0 2px 6px rgba(0,0,0,0.25);
@@ -121,20 +125,20 @@
   #board td.given.selected {
     background: linear-gradient(160deg, #fff3d6, #ffe1a1);
     box-shadow:
-      inset 0 2px 4px rgba(150,100,20,0.25),
-      inset 0 -1px 0 rgba(255,255,255,0.7),
+      inset 0 2px 3px rgba(255,255,255,0.85),
+      inset 0 -2px 3px rgba(0,0,0,0.08),
       0 0 0 3px var(--user);
   }
   #board td.given.peer:not(.selected) {
     box-shadow:
-      inset 0 2px 4px rgba(150,100,20,0.25),
-      inset 0 -1px 0 rgba(255,255,255,0.7),
+      inset 0 2px 3px rgba(255,255,255,0.85),
+      inset 0 -2px 3px rgba(0,0,0,0.08),
       0 0 0 2px rgba(106,61,245,0.35);
   }
   #board td.given.same-num:not(.selected) {
     box-shadow:
-      inset 0 2px 4px rgba(150,100,20,0.25),
-      inset 0 -1px 0 rgba(255,255,255,0.7),
+      inset 0 2px 3px rgba(255,255,255,0.85),
+      inset 0 -2px 3px rgba(0,0,0,0.08),
       0 0 0 2px rgba(42,143,42,0.45);
   }
   .notes {
@@ -309,6 +313,7 @@ function playTone(freq, duration, type, volume, delay) {
 
 function playPlaceSound() { playTone(660, 0.1, 'sine', 0.15); }
 function playErrorSound() { playTone(160, 0.2, 'sawtooth', 0.15); }
+function playNeutralSound() { playTone(450, 0.08, 'sine', 0.12); }
 function playNoteSound() { playTone(900, 0.05, 'sine', 0.08); }
 function playEraseSound() { playTone(300, 0.08, 'sine', 0.1); }
 function playClickSound() { playTone(500, 0.04, 'square', 0.06); }
@@ -451,10 +456,14 @@ function enterNumber(num) {
   } else {
     puzzle[r][c] = num;
     notes[r][c] = [];
-    if (num === solution[r][c]) {
-      playPlaceSound();
+    if (showErrors) {
+      if (num === solution[r][c]) {
+        playPlaceSound();
+      } else {
+        playErrorSound();
+      }
     } else {
-      playErrorSound();
+      playNeutralSound();
     }
   }
   render();
@@ -509,8 +518,16 @@ function render() {
         if (selVal !== 0 && val === selVal) td.classList.add('same-num');
       }
 
-      if (showErrors && val !== 0 && !givens[r][c] && val !== solution[r][c]) {
-        td.classList.add('error');
+      if (val !== 0 && !givens[r][c]) {
+        if (showErrors) {
+          if (val !== solution[r][c]) {
+            td.classList.add('error');
+          } else {
+            td.classList.add('correct');
+          }
+        } else {
+          td.classList.add('neutral');
+        }
       }
     }
   }
