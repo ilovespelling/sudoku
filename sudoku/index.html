@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sudoku</title>
+<style>
+  :root {
+    --cell: 52px;
+    --user: #ff5da2;
+    --given-text: #7a4a12;
+    --error: #ff4b6e;
+    --selected: #ffe066;
+    --peer: #eaf6ff;
+    --same-num: #d6ffe6;
+    --line-thick: #5a3d8f;
+    --line-thin: rgba(90,61,143,0.2);
+    --board-bg: #fffdf8;
+    --board-bg-alt: #f6f0ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #ffd6e8, #d6e4ff, #fff3b0, #d0f4de);
+    background-size: 400% 400%;
+    animation: gradientShift 18s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  #bg-decor {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  #bg-decor span {
+    position: absolute;
+    font-size: 2.6rem;
+    opacity: 0.5;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.15));
+    animation: floaty 7s ease-in-out infinite;
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(10deg); }
+  }
+  #app { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  h1 {
+    margin: 0 0 16px;
+    color: #5a3d8f;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.15);
+  }
+  #board-wrapper {
+    background: linear-gradient(145deg, #ffffff, #f2eefc);
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow:
+      0 20px 40px rgba(0,0,0,0.22),
+      0 6px 14px rgba(0,0,0,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.8);
+    transform: perspective(1200px) rotateX(3deg);
+    transform-style: preserve-3d;
+  }
+  #board {
+    border-collapse: collapse;
+    border: 4px solid var(--line-thick);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  #board td {
+    width: var(--cell);
+    height: var(--cell);
+    text-align: center;
+    vertical-align: middle;
+    font-size: 24px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--user);
+    padding: 0;
+    border: 1px solid var(--line-thin);
+    background: var(--board-bg);
+    box-shadow:
+      inset 0 2px 3px rgba(255,255,255,0.85),
+      inset 0 -2px 3px rgba(0,0,0,0.08);
+    transition: filter 0.1s, box-shadow 0.1s;
+  }
+  #board td:hover:not(.given) { filter: brightness(1.05); }
+  #board tr:nth-child(3) td { border-bottom: 3px solid var(--line-thick); }
+  #board tr:nth-child(6) td { border-bottom: 3px solid var(--line-thick); }
+  #board td:nth-child(3) { border-right: 3px solid var(--line-thick); }
+  #board td:nth-child(6) { border-right: 3px solid var(--line-thick); }
+  #board td[data-box="1"], #board td[data-box="3"], #board td[data-box="5"], #board td[data-box="7"] {
+    background: var(--board-bg-alt);
+  }
+  #board td.given {
+    background: linear-gradient(160deg, #fff3d6, #ffe1a1);
+    color: var(--given-text);
+    font-weight: 700;
+    cursor: default;
+    box-shadow:
+      inset 0 2px 4px rgba(150,100,20,0.25),
+      inset 0 -1px 0 rgba(255,255,255,0.7);
+  }
+  #board td.error { color: var(--error); }
+  #board td.selected {
+    background: linear-gradient(160deg, #fff3b0, var(--selected));
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.25);
+  }
+  #board td.peer:not(.selected) { background: linear-gradient(160deg, #f2f8ff, var(--peer)); }
+  #board td.same-num:not(.selected) { background: linear-gradient(160deg, #e6fff0, var(--same-num)); }
+  #board td.given.selected {
+    background: linear-gradient(160deg, #fff3d6, #ffe1a1);
+    box-shadow:
+      inset 0 2px 4px rgba(150,100,20,0.25),
+      inset 0 -1px 0 rgba(255,255,255,0.7),
+      0 0 0 3px var(--user);
+  }
+  #board td.given.peer:not(.selected) {
+    box-shadow:
+      inset 0 2px 4px rgba(150,100,20,0.25),
+      inset 0 -1px 0 rgba(255,255,255,0.7),
+      0 0 0 2px rgba(106,61,245,0.35);
+  }
+  #board td.given.same-num:not(.selected) {
+    box-shadow:
+      inset 0 2px 4px rgba(150,100,20,0.25),
+      inset 0 -1px 0 rgba(255,255,255,0.7),
+      0 0 0 2px rgba(42,143,42,0.45);
+  }
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    width: 100%;
+    height: 100%;
+    font-size: 11px;
+    font-weight: normal;
+    color: #888;
+    line-height: 1;
+  }
+  .notes span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #controls {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 480px;
+  }
+  #controls button {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border: 1px solid #999;
+    border-radius: 6px;
+    background: linear-gradient(160deg, #ffffff, #e2e2e2);
+    box-shadow: 0 3px 0 #b8b8b8, 0 5px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  #controls button:hover { background: linear-gradient(160deg, #ffffff, #ececec); }
+  #controls button:active {
+    box-shadow: 0 1px 0 #b8b8b8;
+    transform: translateY(2px);
+  }
+  #controls #erase-btn { width: auto; padding: 0 14px; white-space: nowrap; }
+
+  #top-toggles {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  #toolbar {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  select, #toolbar button, #top-toggles button {
+    padding: 8px 12px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: 1px solid #999;
+    background: linear-gradient(160deg, #ffffff, #e2e2e2);
+    box-shadow: 0 3px 0 #b8b8b8, 0 5px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  #toolbar button:active, #top-toggles button:active {
+    box-shadow: 0 1px 0 #b8b8b8;
+    transform: translateY(2px);
+  }
+  #notes-btn.active, #error-toggle-btn.active {
+    background: linear-gradient(160deg, #bcd9ff, var(--selected));
+    border-color: var(--user);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  }
+  #sound-btn { width: 44px; padding: 0; }
+  #status {
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: bold;
+    min-height: 24px;
+  }
+  #status.win { color: #2a8f2a; }
+</style>
+</head>
+<body>
+
+<div id="bg-decor" aria-hidden="true">
+  <span style="top:6%;left:8%;animation-duration:7s;">🍭</span>
+  <span style="top:12%;left:82%;animation-duration:9s;animation-delay:-2s;">🍬</span>
+  <span style="top:38%;left:4%;animation-duration:8s;animation-delay:-1s;">🌈</span>
+  <span style="top:68%;left:90%;animation-duration:6s;animation-delay:-3s;">🎈</span>
+  <span style="top:85%;left:12%;animation-duration:7.5s;animation-delay:-2.5s;">🧁</span>
+  <span style="top:8%;left:46%;animation-duration:6.5s;">✨</span>
+  <span style="top:90%;left:60%;animation-duration:8.5s;animation-delay:-1.5s;">🍩</span>
+  <span style="top:48%;left:94%;animation-duration:7s;animation-delay:-4s;">🎉</span>
+  <span style="top:55%;left:1%;animation-duration:9s;animation-delay:-2s;">🦄</span>
+  <span style="top:22%;left:20%;animation-duration:6s;animation-delay:-1s;">🍫</span>
+</div>
+
+<div id="app">
+
+<h1>Sudoku</h1>
+
+<div id="top-toggles">
+  <button id="notes-btn">Notes: Off</button>
+  <button id="error-toggle-btn" class="active">Show Mistakes: On</button>
+</div>
+
+<div id="board-wrapper">
+<table id="board"></table>
+</div>
+
+<div id="controls"></div>
+
+<div id="toolbar">
+  <select id="difficulty">
+    <option value="36">Easy</option>
+    <option value="30" selected>Medium</option>
+    <option value="24">Hard</option>
+  </select>
+  <button id="new-game-btn">New Game</button>
+  <button id="check-btn">Check</button>
+  <button id="sound-btn" title="Toggle sound">🔊</button>
+</div>
+
+<div id="status"></div>
+
+</div>
+
+<script>
+const SIZE = 9;
+const BOX = 3;
+
+const MAX_NOTES = 4;
+
+let solution = [];
+let puzzle = [];
+let givens = [];
+let notes = [];
+let selected = null;
+let notesMode = false;
+let showErrors = true;
+let wonAlready = false;
+let soundEnabled = true;
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type, volume, delay) {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const start = ctx.currentTime + (delay || 0);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, start);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration);
+}
+
+function playPlaceSound() { playTone(660, 0.1, 'sine', 0.15); }
+function playErrorSound() { playTone(160, 0.2, 'sawtooth', 0.15); }
+function playNoteSound() { playTone(900, 0.05, 'sine', 0.08); }
+function playEraseSound() { playTone(300, 0.08, 'sine', 0.1); }
+function playClickSound() { playTone(500, 0.04, 'square', 0.06); }
+function playWinSound() {
+  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+    playTone(freq, 0.18, 'triangle', 0.18, i * 0.12);
+  });
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+function emptyGrid() {
+  return Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+}
+
+function isSafe(grid, row, col, num) {
+  for (let i = 0; i < SIZE; i++) {
+    if (grid[row][i] === num || grid[i][col] === num) return false;
+  }
+  const boxRow = row - (row % BOX);
+  const boxCol = col - (col % BOX);
+  for (let r = 0; r < BOX; r++) {
+    for (let c = 0; c < BOX; c++) {
+      if (grid[boxRow + r][boxCol + c] === num) return false;
+    }
+  }
+  return true;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function fillGrid(grid) {
+  for (let pos = 0; pos < SIZE * SIZE; pos++) {
+    const row = Math.floor(pos / SIZE);
+    const col = pos % SIZE;
+    if (grid[row][col] !== 0) continue;
+    const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+    for (const num of nums) {
+      if (isSafe(grid, row, col, num)) {
+        grid[row][col] = num;
+        if (fillGrid(grid)) return true;
+        grid[row][col] = 0;
+      }
+    }
+    return false;
+  }
+  return true;
+}
+
+function generateSolution() {
+  const grid = emptyGrid();
+  fillGrid(grid);
+  return grid;
+}
+
+function generatePuzzle(clueCount) {
+  const grid = solution.map(row => row.slice());
+  const cells = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) cells.push([r, c]);
+  }
+  shuffle(cells);
+  const cellsToRemove = SIZE * SIZE - clueCount;
+  for (let i = 0; i < cellsToRemove && i < cells.length; i++) {
+    const [r, c] = cells[i];
+    grid[r][c] = 0;
+  }
+  return grid;
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < SIZE; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < SIZE; c++) {
+      const td = document.createElement('td');
+      td.dataset.row = r;
+      td.dataset.col = c;
+      td.dataset.box = Math.floor(r / BOX) * BOX + Math.floor(c / BOX);
+      td.addEventListener('click', () => selectCell(r, c));
+      tr.appendChild(td);
+    }
+    board.appendChild(tr);
+  }
+}
+
+function buildControls() {
+  const controls = document.getElementById('controls');
+  controls.innerHTML = '';
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.textContent = n;
+    btn.addEventListener('click', () => enterNumber(n));
+    controls.appendChild(btn);
+  }
+  const erase = document.createElement('button');
+  erase.id = 'erase-btn';
+  erase.textContent = 'Erase';
+  erase.addEventListener('click', () => enterNumber(0));
+  controls.appendChild(erase);
+}
+
+function selectCell(r, c) {
+  selected = [r, c];
+  render();
+}
+
+function enterNumber(num) {
+  if (!selected) return;
+  const [r, c] = selected;
+  if (givens[r][c]) return;
+
+  if (num === 0) {
+    if (puzzle[r][c] !== 0 || notes[r][c].length > 0) playEraseSound();
+    puzzle[r][c] = 0;
+    notes[r][c] = [];
+    render();
+    return;
+  }
+
+  if (notesMode) {
+    if (puzzle[r][c] !== 0) return;
+    const idx = notes[r][c].indexOf(num);
+    if (idx >= 0) {
+      notes[r][c].splice(idx, 1);
+    } else if (notes[r][c].length < MAX_NOTES) {
+      notes[r][c].push(num);
+    }
+    playNoteSound();
+  } else {
+    puzzle[r][c] = num;
+    notes[r][c] = [];
+    if (num === solution[r][c]) {
+      playPlaceSound();
+    } else {
+      playErrorSound();
+    }
+  }
+  render();
+}
+
+function toggleNotesMode() {
+  notesMode = !notesMode;
+  const btn = document.getElementById('notes-btn');
+  btn.textContent = 'Notes: ' + (notesMode ? 'On' : 'Off');
+  btn.classList.toggle('active', notesMode);
+}
+
+function toggleShowErrors() {
+  showErrors = !showErrors;
+  const btn = document.getElementById('error-toggle-btn');
+  btn.textContent = 'Show Mistakes: ' + (showErrors ? 'On' : 'Off');
+  btn.classList.toggle('active', showErrors);
+  render();
+}
+
+function render() {
+  const status = document.getElementById('status');
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const td = document.querySelector(`td[data-row="${r}"][data-col="${c}"]`);
+      const val = puzzle[r][c];
+      td.textContent = '';
+      if (val !== 0) {
+        td.textContent = val;
+      } else if (notes[r][c] && notes[r][c].length > 0) {
+        const notesDiv = document.createElement('div');
+        notesDiv.className = 'notes';
+        notes[r][c].slice().sort((a, b) => a - b).forEach(n => {
+          const span = document.createElement('span');
+          span.textContent = n;
+          notesDiv.appendChild(span);
+        });
+        td.appendChild(notesDiv);
+      }
+      td.className = '';
+      if (givens[r][c]) td.classList.add('given');
+
+      if (selected) {
+        const [sr, sc] = selected;
+        const sameBox = Math.floor(r / BOX) === Math.floor(sr / BOX) && Math.floor(c / BOX) === Math.floor(sc / BOX);
+        if (r === sr && c === sc) {
+          td.classList.add('selected');
+        } else if (r === sr || c === sc || sameBox) {
+          td.classList.add('peer');
+        }
+        const selVal = puzzle[sr][sc];
+        if (selVal !== 0 && val === selVal) td.classList.add('same-num');
+      }
+
+      if (showErrors && val !== 0 && !givens[r][c] && val !== solution[r][c]) {
+        td.classList.add('error');
+      }
+    }
+  }
+
+  if (isComplete() && isCorrect()) {
+    status.textContent = 'Solved! 🎉';
+    status.classList.add('win');
+    if (!wonAlready) {
+      wonAlready = true;
+      playWinSound();
+    }
+  } else {
+    status.classList.remove('win');
+    status.textContent = '';
+  }
+}
+
+function isComplete() {
+  return puzzle.every(row => row.every(v => v !== 0));
+}
+
+function isCorrect() {
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (puzzle[r][c] !== solution[r][c]) return false;
+    }
+  }
+  return true;
+}
+
+function checkBoard() {
+  const status = document.getElementById('status');
+  if (!isComplete()) {
+    status.classList.remove('win');
+    status.textContent = 'Not finished yet — keep going!';
+    playErrorSound();
+    return;
+  }
+  if (isCorrect()) {
+    status.classList.add('win');
+    status.textContent = 'Solved! 🎉';
+  } else {
+    status.classList.remove('win');
+    status.textContent = 'Something is off — check the highlighted cells.';
+    playErrorSound();
+  }
+}
+
+function newGame() {
+  const clueCount = parseInt(document.getElementById('difficulty').value, 10);
+  solution = generateSolution();
+  puzzle = generatePuzzle(clueCount);
+  givens = puzzle.map(row => row.map(v => v !== 0));
+  notes = Array.from({length: SIZE}, () => Array.from({length: SIZE}, () => []));
+  selected = null;
+  wonAlready = false;
+  render();
+}
+
+document.getElementById('new-game-btn').addEventListener('click', () => { playClickSound(); newGame(); });
+document.getElementById('check-btn').addEventListener('click', () => { playClickSound(); checkBoard(); });
+document.getElementById('notes-btn').addEventListener('click', () => { playClickSound(); toggleNotesMode(); });
+document.getElementById('error-toggle-btn').addEventListener('click', () => { playClickSound(); toggleShowErrors(); });
+document.getElementById('sound-btn').addEventListener('click', toggleSound);
+
+document.addEventListener('keydown', (e) => {
+  if (!selected) return;
+  if (e.key >= '1' && e.key <= '9') enterNumber(parseInt(e.key, 10));
+  if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') enterNumber(0);
+});
+
+buildBoard();
+buildControls();
+newGame();
+</script>
+
+</body>
+</html>
