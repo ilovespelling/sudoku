@@ -286,13 +286,52 @@ let showErrors = true;
 let wonAlready = false;
 let soundEnabled = true;
 let audioCtx = null;
+let musicPlaying = false;
+let musicTimer = null;
 
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (soundEnabled && !musicPlaying) startMusic();
   return audioCtx;
+}
+
+const MUSIC_MELODY = [
+  261.63, 329.63, 392.00, 329.63,  // C
+  440.00, 523.25, 659.25, 523.25,  // Am
+  349.23, 440.00, 523.25, 440.00,  // F
+  392.00, 493.88, 587.33, 493.88   // G
+];
+const MUSIC_BASS = [130.81, 110.00, 87.31, 98.00];
+const MUSIC_STEP = 0.5;
+const MUSIC_LOOP_SECONDS = MUSIC_MELODY.length * MUSIC_STEP;
+const MUSIC_BASS_STEP = MUSIC_LOOP_SECONDS / MUSIC_BASS.length;
+
+function scheduleMusicLoop() {
+  if (!musicPlaying) return;
+  MUSIC_BASS.forEach((freq, i) => {
+    playTone(freq, MUSIC_BASS_STEP * 0.9, 'sine', 0.035, i * MUSIC_BASS_STEP);
+  });
+  MUSIC_MELODY.forEach((freq, i) => {
+    playTone(freq, MUSIC_STEP * 0.85, 'triangle', 0.05, i * MUSIC_STEP);
+  });
+  musicTimer = setTimeout(scheduleMusicLoop, MUSIC_LOOP_SECONDS * 1000);
+}
+
+function startMusic() {
+  if (musicPlaying) return;
+  musicPlaying = true;
+  scheduleMusicLoop();
+}
+
+function stopMusic() {
+  musicPlaying = false;
+  if (musicTimer) {
+    clearTimeout(musicTimer);
+    musicTimer = null;
+  }
 }
 
 function playTone(freq, duration, type, volume, delay) {
@@ -326,6 +365,11 @@ function playWinSound() {
 function toggleSound() {
   soundEnabled = !soundEnabled;
   document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) {
+    getAudioContext();
+  } else {
+    stopMusic();
+  }
 }
 
 function emptyGrid() {
