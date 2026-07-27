@@ -6,39 +6,51 @@
 <title>Sudoku</title>
 <style>
   :root {
-    --cell: clamp(28px, calc((100vw - 64px) / 9), 52px);
-    --ctrl-size: clamp(28px, calc((100vw - 64px) / 9), 40px);
-    --user: #ff5da2;
-    --neutral: #4b4a78;
-    --correct: #2ec27e;
-    --given-text: #7a4a12;
-    --error: #ff4b6e;
-    --selected: #ffe066;
-    --peer: #eaf6ff;
-    --same-num: #d6ffe6;
-    --line-thick: #5a3d8f;
-    --line-thin: rgba(90,61,143,0.2);
-    --board-bg: #fffdf8;
-    --board-bg-alt: #f6f0ff;
+    --cell: clamp(30px, calc((100vw - 64px) / 9), 62px);
+    --ctrl-size: clamp(30px, calc((100vw - 64px) / 9), 50px);
+    --ink: #2c1b47;
+    --paper: #fffaf2;
+    --paper-alt: #ffe9d6;
+    --user-num: #d6336c;
+    --given-num: #8a4a17;
+    --correct: #2f9e64;
+    --error: #e0435f;
+    --neutral: #5b5470;
+    --selected: #ffd166;
+    --peer: #efe3ff;
+    --same-num: #d7f7e3;
+    --line-thick: #4b2c73;
+    --line-thin: rgba(75, 44, 115, 0.18);
+    --accent: #ff6f9c;
+    --accent-dark: #c93f70;
+    --grape: #8b5cf6;
+    --grape-dark: #6b3fd6;
+    --cream-chip: #fff6ea;
+    --cell-bevel: inset 0 2px 2px rgba(255,255,255,0.75), inset 0 -2px 3px rgba(0,0,0,0.15);
   }
   * { box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #ffd6e8, #d6e4ff, #fff3b0, #d0f4de);
-    background-size: 400% 400%;
-    animation: gradientShift 18s ease infinite;
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    background: linear-gradient(160deg, #241539 0%, #5c2a63 40%, #b0507f 72%, #f2a45c 100%);
+    background-size: 220% 220%;
+    animation: gradientShift 26s ease infinite;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px;
+    padding: 20px 16px;
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
   }
   @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% { background-position: 0% 30%; }
+    50% { background-position: 100% 70%; }
+    100% { background-position: 0% 30%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body { animation: none; }
+    #bg-decor span { animation: none; }
   }
   #bg-decor {
     position: fixed;
@@ -49,100 +61,93 @@
   }
   #bg-decor span {
     position: absolute;
-    font-size: 2.6rem;
-    opacity: 0.5;
-    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.15));
+    font-size: 2.4rem;
+    opacity: 0.35;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
     animation: floaty 7s ease-in-out infinite;
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(10deg); }
+    50% { transform: translateY(-18px) rotate(8deg); }
   }
-  #app { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  #app { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: 100%; }
   h1 {
-    margin: 0 0 16px;
-    font-size: clamp(1.4rem, 6vw, 2rem);
-    color: #5a3d8f;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.15);
+    margin: 0 0 18px;
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 7vw, 2.4rem);
+    letter-spacing: 0.03em;
+    color: #ffe9c7;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  }
+  #board-frame {
+    position: relative;
+    background: var(--cream-chip);
+    border: 3px dashed var(--accent);
+    border-radius: 30px;
+    padding: 18px;
+    box-shadow: 0 28px 50px rgba(0,0,0,0.45), 0 10px 16px rgba(0,0,0,0.3);
+    transform: perspective(1000px) rotateX(5deg);
+    transform-style: preserve-3d;
   }
   #board-wrapper {
-    background: linear-gradient(145deg, #ffffff, #f2eefc);
-    border-radius: 22px;
-    padding: 12px;
-    box-shadow:
-      0 20px 40px rgba(0,0,0,0.22),
-      0 6px 14px rgba(0,0,0,0.15),
-      inset 0 1px 0 rgba(255,255,255,0.8);
-    transform: perspective(1200px) rotateX(3deg);
-    transform-style: preserve-3d;
+    background: var(--paper);
+    border-radius: 18px;
+    padding: 10px;
+    box-shadow: 0 10px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.6);
   }
   #board {
     border-collapse: collapse;
     border: 4px solid var(--line-thick);
     border-radius: 10px;
     overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
   #board td {
     width: var(--cell);
     height: var(--cell);
     text-align: center;
     vertical-align: middle;
-    font-size: calc(var(--cell) * 0.46);
+    font-size: calc(var(--cell) * 0.44);
+    font-weight: 600;
     cursor: pointer;
     user-select: none;
-    color: var(--user);
+    color: var(--user-num);
     padding: 0;
     border: 1px solid var(--line-thin);
-    background: var(--board-bg);
-    box-shadow:
-      inset 0 2px 3px rgba(255,255,255,0.85),
-      inset 0 -2px 3px rgba(0,0,0,0.08);
-    transition: filter 0.1s, box-shadow 0.1s;
+    background: var(--paper);
+    box-shadow: var(--cell-bevel);
+    transition: background 0.1s ease, box-shadow 0.1s ease;
   }
-  #board td:hover:not(.given) { filter: brightness(1.05); }
+  #board td:hover:not(.given) { background: #fff4e0; }
   #board tr:nth-child(3) td { border-bottom: 3px solid var(--line-thick); }
   #board tr:nth-child(6) td { border-bottom: 3px solid var(--line-thick); }
   #board td:nth-child(3) { border-right: 3px solid var(--line-thick); }
   #board td:nth-child(6) { border-right: 3px solid var(--line-thick); }
   #board td[data-box="1"], #board td[data-box="3"], #board td[data-box="5"], #board td[data-box="7"] {
-    background: var(--board-bg-alt);
+    background: var(--paper-alt);
   }
   #board td.given {
-    background: linear-gradient(160deg, #fff3d6, #ffe1a1);
-    color: var(--given-text);
+    background: #ffe3b8;
+    color: var(--given-num);
     font-weight: 700;
     cursor: default;
-    box-shadow:
-      inset 0 2px 3px rgba(255,255,255,0.85),
-      inset 0 -2px 3px rgba(0,0,0,0.08);
   }
   #board td.error { color: var(--error); }
   #board td.correct { color: var(--correct); }
   #board td.neutral { color: var(--neutral); }
   #board td.selected {
-    background: linear-gradient(160deg, #fff3b0, var(--selected));
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.25);
+    background: var(--selected);
+    box-shadow: var(--cell-bevel), inset 0 0 0 3px var(--accent-dark);
   }
-  #board td.peer:not(.selected) { background: linear-gradient(160deg, #f2f8ff, var(--peer)); }
-  #board td.same-num:not(.selected) { background: linear-gradient(160deg, #e6fff0, var(--same-num)); }
+  #board td.peer:not(.selected) { background: var(--peer); }
+  #board td.same-num:not(.selected) { background: var(--same-num); }
   #board td.given.selected {
-    background: linear-gradient(160deg, #fff3d6, #ffe1a1);
-    box-shadow:
-      inset 0 2px 3px rgba(255,255,255,0.85),
-      inset 0 -2px 3px rgba(0,0,0,0.08),
-      0 0 0 3px var(--user);
-  }
-  #board td.given.peer:not(.selected) {
-    box-shadow:
-      inset 0 2px 3px rgba(255,255,255,0.85),
-      inset 0 -2px 3px rgba(0,0,0,0.08),
-      0 0 0 2px rgba(106,61,245,0.35);
+    background: #ffe3b8;
+    box-shadow: var(--cell-bevel), inset 0 0 0 3px var(--accent-dark);
   }
   #board td.given.same-num:not(.selected) {
-    box-shadow:
-      inset 0 2px 3px rgba(255,255,255,0.85),
-      inset 0 -2px 3px rgba(0,0,0,0.08),
-      0 0 0 2px rgba(42,143,42,0.45);
+    box-shadow: var(--cell-bevel), inset 0 0 0 2px rgba(47, 158, 100, 0.5);
   }
   .notes {
     display: grid;
@@ -150,9 +155,9 @@
     grid-template-rows: repeat(2, 1fr);
     width: 100%;
     height: 100%;
-    font-size: calc(var(--cell) * 0.21);
-    font-weight: normal;
-    color: #888;
+    font-size: calc(var(--cell) * 0.2);
+    font-weight: 600;
+    color: #9a8fae;
     line-height: 1;
   }
   .notes span {
@@ -162,74 +167,104 @@
   }
 
   #controls {
-    margin-top: 16px;
+    margin-top: 18px;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     justify-content: center;
-    max-width: 480px;
+    max-width: 520px;
   }
   #controls button {
     width: var(--ctrl-size);
     height: var(--ctrl-size);
-    font-size: calc(var(--ctrl-size) * 0.45);
-    border: 1px solid #999;
-    border-radius: 6px;
-    background: linear-gradient(160deg, #ffffff, #e2e2e2);
-    box-shadow: 0 3px 0 #b8b8b8, 0 5px 8px rgba(0,0,0,0.2);
+    font-size: calc(var(--ctrl-size) * 0.42);
+    font-weight: 700;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #ff8fb3, var(--accent));
+    color: #fff;
+    box-shadow: 0 3px 0 var(--accent-dark), 0 5px 10px rgba(0,0,0,0.25);
     cursor: pointer;
-    transition: transform 0.05s, box-shadow 0.05s;
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
   }
-  #controls button:hover { background: linear-gradient(160deg, #ffffff, #ececec); }
+  #controls button:hover { filter: brightness(1.05); }
   #controls button:active {
-    box-shadow: 0 1px 0 #b8b8b8;
     transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--accent-dark);
   }
-  #controls #erase-btn { width: auto; padding: 0 14px; white-space: nowrap; }
+  #controls #erase-btn {
+    width: auto;
+    padding: 0 18px;
+    white-space: nowrap;
+    border-radius: 999px;
+    background: linear-gradient(160deg, #a78bfa, var(--grape));
+    box-shadow: 0 3px 0 var(--grape-dark), 0 5px 10px rgba(0,0,0,0.25);
+  }
+  #controls #erase-btn:active { box-shadow: 0 1px 0 var(--grape-dark); }
+  #controls button.completed {
+    background: linear-gradient(160deg, #7bdba0, var(--correct));
+    box-shadow: 0 3px 0 #1f7a49, 0 5px 10px rgba(0,0,0,0.25);
+  }
+  #controls button.completed:active { box-shadow: 0 1px 0 #1f7a49; }
 
   #top-toggles {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
     justify-content: center;
   }
   #toolbar {
-    margin-top: 16px;
+    margin-top: 18px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
     justify-content: center;
   }
   select, #toolbar button, #top-toggles button {
-    padding: 8px 12px;
-    font-size: 15px;
-    border-radius: 6px;
-    border: 1px solid #999;
-    background: linear-gradient(160deg, #ffffff, #e2e2e2);
-    box-shadow: 0 3px 0 #b8b8b8, 0 5px 8px rgba(0,0,0,0.2);
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    border-radius: 999px;
+    border: none;
+    background: var(--cream-chip);
+    color: var(--ink);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.2);
     cursor: pointer;
-    transition: transform 0.05s, box-shadow 0.05s;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
   #toolbar button:active, #top-toggles button:active {
-    box-shadow: 0 1px 0 #b8b8b8;
     transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2);
   }
-  #notes-btn.active, #error-toggle-btn.active {
-    background: linear-gradient(160deg, #bcd9ff, var(--selected));
-    border-color: var(--user);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  .toggle-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 3px 0 var(--accent-dark), 0 4px 10px rgba(0,0,0,0.25);
   }
-  #sound-btn { width: 44px; padding: 0; }
+  button:focus-visible, select:focus-visible, #board td:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
   #status {
-    margin-top: 14px;
+    margin-top: 16px;
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 700;
     min-height: 24px;
+    color: #ffe9c7;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
   }
-  #status.win { color: #2a8f2a; }
+  #status.win { color: #7cf7b0; }
+
+  @media (max-width: 480px) {
+    body { padding: 12px 8px; }
+    #board-frame { padding: 10px; border-radius: 22px; }
+    #board-wrapper { padding: 6px; border-radius: 14px; }
+    h1 { margin-bottom: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -252,12 +287,16 @@
 <h1>Sudoku</h1>
 
 <div id="top-toggles">
-  <button id="notes-btn">Notes: Off</button>
-  <button id="error-toggle-btn" class="active">Show Mistakes: On</button>
+  <button id="notes-btn" class="toggle-btn">Notes: Off</button>
+  <button id="error-toggle-btn" class="toggle-btn active">Show Mistakes: On</button>
+  <button id="music-btn" class="toggle-btn active">Music: On</button>
+  <button id="sfx-btn" class="toggle-btn active">Sound: On</button>
 </div>
 
-<div id="board-wrapper">
-<table id="board"></table>
+<div id="board-frame">
+  <div id="board-wrapper">
+    <table id="board"></table>
+  </div>
 </div>
 
 <div id="controls"></div>
@@ -270,8 +309,6 @@
     <option value="24">Hard</option>
   </select>
   <button id="new-game-btn">New Game</button>
-  <button id="check-btn">Check</button>
-  <button id="sound-btn" title="Toggle sound">🔊</button>
 </div>
 
 <div id="status"></div>
@@ -292,58 +329,42 @@ let selected = null;
 let notesMode = false;
 let showErrors = true;
 let wonAlready = false;
-let soundEnabled = true;
+let sfxEnabled = true;
+let musicEnabled = true;
 let audioCtx = null;
-let musicPlaying = false;
-let musicTimer = null;
+let bgMusic = null;
 
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  if (soundEnabled && !musicPlaying) startMusic();
   return audioCtx;
 }
 
-const MUSIC_MELODY = [
-  261.63, 329.63, 392.00, 329.63,  // C
-  440.00, 523.25, 659.25, 523.25,  // Am
-  349.23, 440.00, 523.25, 440.00,  // F
-  392.00, 493.88, 587.33, 493.88   // G
-];
-const MUSIC_BASS = [130.81, 110.00, 87.31, 98.00];
-const MUSIC_STEP = 0.5;
-const MUSIC_LOOP_SECONDS = MUSIC_MELODY.length * MUSIC_STEP;
-const MUSIC_BASS_STEP = MUSIC_LOOP_SECONDS / MUSIC_BASS.length;
-
-function scheduleMusicLoop() {
-  if (!musicPlaying) return;
-  MUSIC_BASS.forEach((freq, i) => {
-    playTone(freq, MUSIC_BASS_STEP * 0.9, 'sine', 0.035, i * MUSIC_BASS_STEP);
-  });
-  MUSIC_MELODY.forEach((freq, i) => {
-    playTone(freq, MUSIC_STEP * 0.85, 'triangle', 0.05, i * MUSIC_STEP);
-  });
-  musicTimer = setTimeout(scheduleMusicLoop, MUSIC_LOOP_SECONDS * 1000);
-}
-
 function startMusic() {
-  if (musicPlaying) return;
-  musicPlaying = true;
-  scheduleMusicLoop();
+  if (!bgMusic) {
+    bgMusic = new Audio('Winter.mp3');
+    bgMusic.loop = true;
+    bgMusic.volume = 0.4;
+  }
+  if (bgMusic.paused) bgMusic.play().catch(() => {});
 }
 
 function stopMusic() {
-  musicPlaying = false;
-  if (musicTimer) {
-    clearTimeout(musicTimer);
-    musicTimer = null;
-  }
+  if (bgMusic) bgMusic.pause();
 }
 
+function primeAudio() {
+  if (musicEnabled) startMusic();
+  document.removeEventListener('pointerdown', primeAudio);
+  document.removeEventListener('keydown', primeAudio);
+}
+document.addEventListener('pointerdown', primeAudio);
+document.addEventListener('keydown', primeAudio);
+
 function playTone(freq, duration, type, volume, delay) {
-  if (!soundEnabled) return;
+  if (!sfxEnabled) return;
   const ctx = getAudioContext();
   const start = ctx.currentTime + (delay || 0);
   const osc = ctx.createOscillator();
@@ -358,26 +379,42 @@ function playTone(freq, duration, type, volume, delay) {
   osc.stop(start + duration);
 }
 
-function playPlaceSound() { playTone(660, 0.1, 'sine', 0.15); }
-function playErrorSound() { playTone(160, 0.2, 'sawtooth', 0.15); }
-function playNeutralSound() { playTone(450, 0.08, 'sine', 0.12); }
-function playNoteSound() { playTone(900, 0.05, 'sine', 0.08); }
-function playEraseSound() { playTone(300, 0.08, 'sine', 0.1); }
-function playClickSound() { playTone(500, 0.04, 'square', 0.06); }
+function playClickSound() { playTone(600, 0.05, 'square', 0.14); }
+function playDingSound() {
+  playTone(880, 0.18, 'sine', 0.18, 0.06);
+  playTone(1320, 0.15, 'sine', 0.08, 0.08);
+}
 function playWinSound() {
-  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-    playTone(freq, 0.18, 'triangle', 0.18, i * 0.12);
+  const run = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+  run.forEach((freq, i) => {
+    playTone(freq, 0.22, 'triangle', 0.32, i * 0.09);
+  });
+  const chordStart = run.length * 0.09 + 0.05;
+  playTone(130.81, 0.7, 'sine', 0.28, chordStart);
+  [783.99, 1046.5, 1318.51].forEach(freq => {
+    playTone(freq, 0.7, 'sawtooth', 0.24, chordStart);
   });
 }
 
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-  document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
-  if (soundEnabled) {
-    getAudioContext();
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  const btn = document.getElementById('music-btn');
+  btn.textContent = 'Music: ' + (musicEnabled ? 'On' : 'Off');
+  btn.classList.toggle('active', musicEnabled);
+  if (musicEnabled) {
+    startMusic();
   } else {
     stopMusic();
   }
+  playClickSound();
+}
+
+function toggleSfx() {
+  sfxEnabled = !sfxEnabled;
+  const btn = document.getElementById('sfx-btn');
+  btn.textContent = 'Sound: ' + (sfxEnabled ? 'On' : 'Off');
+  btn.classList.toggle('active', sfxEnabled);
+  playClickSound();
 }
 
 function emptyGrid() {
@@ -468,6 +505,7 @@ function buildControls() {
   for (let n = 1; n <= 9; n++) {
     const btn = document.createElement('button');
     btn.textContent = n;
+    btn.dataset.num = n;
     btn.addEventListener('click', () => enterNumber(n));
     controls.appendChild(btn);
   }
@@ -479,6 +517,7 @@ function buildControls() {
 }
 
 function selectCell(r, c) {
+  playClickSound();
   selected = [r, c];
   render();
 }
@@ -488,8 +527,9 @@ function enterNumber(num) {
   const [r, c] = selected;
   if (givens[r][c]) return;
 
+  playClickSound();
+
   if (num === 0) {
-    if (puzzle[r][c] !== 0 || notes[r][c].length > 0) playEraseSound();
     puzzle[r][c] = 0;
     notes[r][c] = [];
     render();
@@ -504,19 +544,10 @@ function enterNumber(num) {
     } else if (notes[r][c].length < MAX_NOTES) {
       notes[r][c].push(num);
     }
-    playNoteSound();
   } else {
     puzzle[r][c] = num;
     notes[r][c] = [];
-    if (showErrors) {
-      if (num === solution[r][c]) {
-        playPlaceSound();
-      } else {
-        playErrorSound();
-      }
-    } else {
-      playNeutralSound();
-    }
+    playDingSound();
   }
   render();
 }
@@ -584,6 +615,17 @@ function render() {
     }
   }
 
+  for (let n = 1; n <= 9; n++) {
+    let count = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (puzzle[r][c] === n && puzzle[r][c] === solution[r][c]) count++;
+      }
+    }
+    const btn = document.querySelector(`#controls button[data-num="${n}"]`);
+    if (btn) btn.classList.toggle('completed', count >= SIZE);
+  }
+
   if (isComplete() && isCorrect()) {
     status.textContent = 'Solved! 🎉';
     status.classList.add('win');
@@ -610,24 +652,6 @@ function isCorrect() {
   return true;
 }
 
-function checkBoard() {
-  const status = document.getElementById('status');
-  if (!isComplete()) {
-    status.classList.remove('win');
-    status.textContent = 'Not finished yet — keep going!';
-    playErrorSound();
-    return;
-  }
-  if (isCorrect()) {
-    status.classList.add('win');
-    status.textContent = 'Solved! 🎉';
-  } else {
-    status.classList.remove('win');
-    status.textContent = 'Something is off — check the highlighted cells.';
-    playErrorSound();
-  }
-}
-
 function newGame() {
   const clueCount = parseInt(document.getElementById('difficulty').value, 10);
   solution = generateSolution();
@@ -639,11 +663,15 @@ function newGame() {
   render();
 }
 
-document.getElementById('new-game-btn').addEventListener('click', () => { playClickSound(); newGame(); });
-document.getElementById('check-btn').addEventListener('click', () => { playClickSound(); checkBoard(); });
+document.getElementById('new-game-btn').addEventListener('click', () => {
+  if (!confirm('Start a new game? Your current progress will be lost.')) return;
+  playClickSound();
+  newGame();
+});
 document.getElementById('notes-btn').addEventListener('click', () => { playClickSound(); toggleNotesMode(); });
 document.getElementById('error-toggle-btn').addEventListener('click', () => { playClickSound(); toggleShowErrors(); });
-document.getElementById('sound-btn').addEventListener('click', toggleSound);
+document.getElementById('music-btn').addEventListener('click', toggleMusic);
+document.getElementById('sfx-btn').addEventListener('click', toggleSfx);
 
 document.addEventListener('keydown', (e) => {
   if (!selected) return;
